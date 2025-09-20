@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}{% if object %}Edit Unit{% else %}Add New Unit{% endif %}{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto bg-white rounded-2xl shadow-lg p-8">
+    <h1 class="text-3xl font-bold text-gray-800 mb-6">
+        {% if object %}
+            Edit Unit: {{ object.title }}
+        {% else %}
+            Add a New Unit
+        {% endif %}
+    </h1>
+
+    <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="space-y-4">
+            <div>
+                <label for="id_grade" class="text-sm font-semibold text-gray-600 block mb-1">Grade</label>
+                {{ form.grade }}
+                {% for error in form.grade.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ error }}</p>
+                {% endfor %}
+            </div>
+            <div>
+                <label for="id_title" class="text-sm font-semibold text-gray-600 block mb-1">Title</label>
+                <input type="text" name="title" id="id_title" value="{{ form.title.value|default_if_none:'' }}" class="w-full px-4 py-2 mt-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition" required>
+                {% for error in form.title.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ error }}</p>
+                {% endfor %}
+            </div>
+            <div>
+                <label for="id_description" class="text-sm font-semibold text-gray-600 block mb-1">Description</label>
+                <textarea name="description" id="id_description" class="w-full px-4 py-2 mt-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition" rows="4">{{ form.description.value|default_if_none:'' }}</textarea>
+                {% for error in form.description.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ error }}</p>
+                {% endfor %}
+            </div>
+            <div>
+                <label for="id_unit_number" class="text-sm font-semibold text-gray-600 block mb-1">Unit Number</label>
+                <input type="number" name="unit_number" id="id_unit_number" value="{{ form.unit_number.value|default_if_none:'' }}" class="w-full px-4 py-2 mt-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition" required>
+                {% for error in form.unit_number.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ error }}</p>
+                {% endfor %}
+            </div>
+            
+            <div>
+                <label for="id_duration_minutes" class="text-sm font-semibold text-gray-600 block mb-1">Quiz Duration (minutes)</label>
+                <input type="number" name="duration_minutes" id="id_duration_minutes" value="{{ form.duration_minutes.value|default_if_none:'10' }}" class="w-full px-4 py-2 mt-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition" required>
+                <p class="text-xs text-gray-500 mt-1">Set the time limit for this unit's quiz in minutes.</p>
+                {% for error in form.duration_minutes.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ error }}</p>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="mt-6">
+            <label for="id_is_published" class="flex items-center">
+                <input type="checkbox" name="is_published" id="id_is_published" 
+                       class="h-5 w-5 rounded border-gray-300 text-brand-light-blue focus:ring-brand-light-blue"
+                       {% if form.instance.is_published %}checked{% endif %}>
+                <span class="ml-3 text-sm font-semibold text-gray-700">
+                    Is Published? (Visible to students)
+                </span>
+            </label>
+        </div>
+        
+        <div class="mt-8 flex justify-end space-x-4">
+            <a href="{% url 'dashboard:unit_list' %}" class="px-6 py-2 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition duration-300">
+                Cancel
+            </a>
+            <button type="submit" class="px-6 py-2 bg-brand-light-blue text-white font-bold rounded-lg hover:bg-opacity-90 transition duration-300">
+                Save Unit
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

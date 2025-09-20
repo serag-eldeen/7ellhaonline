@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}My Progress{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="bg-white rounded-2xl shadow-lg p-6 sm:p-8 mb-8">
+        <div class="text-center">
+            <h1 class="text-3xl sm:text-4xl font-bold text-gray-800">My Progress Dashboard</h1>
+            <p class="text-md sm:text-lg text-gray-600 mt-2">
+                Keep up the great work, <span class="font-bold text-brand-light-blue">{{ student.first_name|default:student.username }}</span>!
+            </p>
+        </div>
+
+    </div>
+        <!-- New Badges Section -->
+    <div class="bg-white rounded-2xl shadow-lg p-8 mb-8">
+        <h2 class="text-3xl font-bold text-gray-800 mb-4 text-center">My Achievements 🏆</h2>
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+            {% for student_badge in student_badges %}
+            <div class="text-center group relative">
+                <div class="relative">
+                    <img src="{{ student_badge.badge.icon.url }}" alt="{{ student_badge.badge.name }}" class="h-24 w-24 mx-auto rounded-full object-cover border-4 border-yellow-400 shadow-md">
+                    {% if student_badge.count > 1 %}
+                    <span class="absolute -top-1 -right-1 bg-brand-light-blue text-white text-xs font-bold rounded-full h-7 w-7 flex items-center justify-center border-2 border-white">
+                        x{{ student_badge.count }}
+                    </span>
+                    {% endif %}
+                </div>
+                <p class="font-bold text-gray-700 mt-2">{{ student_badge.badge.name }}</p>
+                <!-- Tooltip with description -->
+                <div class="absolute bottom-full mb-2 w-48 px-2 py-1 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                    {{ student_badge.badge.description }}
+                </div>
+            </div>
+            {% empty %}
+            <p class="col-span-full text-center text-gray-500 py-4">You haven't earned any badges yet. Keep trying!</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    {% for grade, data in progress_by_grade.items %}
+    <div class="mb-10">
+        <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-4">
+            Progress in: {{ grade.name }}
+            {% if grade == student.grade %}<span class="text-sm bg-brand-green text-white rounded-full px-3 py-1 ml-2 align-middle">Current</span>{% endif %}
+        </h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-8">
+            <div class="bg-white rounded-2xl shadow-lg p-5 sm:p-6 text-center">
+                <p class="text-md sm:text-lg font-semibold text-gray-500">Quizzes Taken</p>
+                <p class="text-5xl sm:text-6xl font-black text-brand-yellow mt-2">{{ data.total_quizzes }}</p>
+            </div>
+            <div class="bg-white rounded-2xl shadow-lg p-5 sm:p-6 text-center">
+                <p class="text-md sm:text-lg font-semibold text-gray-500">Average Score</p>
+                <p class="text-5xl sm:text-6xl font-black text-brand-green mt-2">{{ data.average_score|floatformat:0 }}%</p>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-lg p-6 sm:p-8">
+            <h3 class="text-xl sm:text-2xl font-bold text-gray-800 mb-4">Recent Activity in {{ grade.name }}</h3>
+            <div class="space-y-4">
+                {% for result in data.results|slice:":5" %}
+                <div class="flex flex-col items-start sm:flex-row sm:items-center sm:justify-between bg-gray-50 p-4 rounded-lg">
+                    <div>
+                        <p class="font-bold text-gray-700">{{ result.unit.title }}</p>
+                        <p class="text-sm text-gray-500">{{ result.completed_at|date:"F j, Y" }}</p>
+                    </div>
+                    <div class="mt-2 sm:mt-0">
+                        <span class="font-bold text-lg sm:text-xl 
+                            {% if result.score >= 80 %}text-brand-green{% elif result.score >= 50 %}text-brand-light-blue{% else %}text-brand-red{% endif %}">
+                            {{ result.score|floatformat:0 }}%
+                        </span>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-gray-500 text-center py-4">You haven't completed any quizzes in this grade yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="bg-white rounded-2xl shadow-lg p-8 text-center">
+        <p class="text-gray-500 text-center py-4">You haven't completed any quizzes yet. Go take one!</p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

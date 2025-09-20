@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <div class="mb-8">
+        <h1 class="text-4xl font-bold text-gray-800">Admin Dashboard</h1>
+        <p class="text-xl text-gray-600 mt-2">Manage your platform and analyze content performance.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        <div class="bg-white rounded-2xl shadow-lg p-6 text-center">
+            <p class="text-lg font-semibold text-gray-500">Total Students</p>
+            <p class="text-5xl font-black text-brand-light-blue mt-2">{{ total_students }}</p>
+        </div>
+        <div class="bg-white rounded-2xl shadow-lg p-6 text-center">
+            <p class="text-lg font-semibold text-gray-500">Quizzes Taken</p>
+            <p class="text-5xl font-black text-brand-yellow mt-2">{{ total_quizzes_taken }}</p>
+        </div>
+        <div class="bg-white rounded-2xl shadow-lg p-6 text-center">
+            <p class="text-lg font-semibold text-gray-500">Average Score</p>
+            <p class="text-5xl font-black text-brand-green mt-2">{{ overall_average_score|floatformat:1 }}%</p>
+        </div>
+        <div class="bg-white rounded-2xl shadow-lg p-6 text-center">
+             <p class="text-lg font-semibold text-gray-500">Total Grades</p>
+             <p class="text-5xl font-black text-brand-red mt-2">{{ students_per_grade.count }}</p>
+        </div>
+    </div>
+    
+    <h2 class="text-3xl font-bold text-gray-800 mb-4">Management Tools</h2>
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-12">
+        <a href="{% url 'dashboard:user_list' %}" class="bg-white rounded-2xl shadow-lg p-6 text-center transform hover:scale-105 transition-transform duration-300"><h3 class="text-xl font-bold text-gray-800">Students</h3></a>
+        <a href="{% url 'dashboard:grade_list' %}" class="bg-white rounded-2xl shadow-lg p-6 text-center transform hover:scale-105 transition-transform duration-300"><h3 class="text-xl font-bold text-gray-800">Grades</h3></a>
+        <a href="{% url 'dashboard:unit_list' %}" class="bg-white rounded-2xl shadow-lg p-6 text-center transform hover:scale-105 transition-transform duration-300"><h3 class="text-xl font-bold text-gray-800">Units</h3></a>
+        <a href="{% url 'dashboard:question_list' %}" class="bg-white rounded-2xl shadow-lg p-6 text-center transform hover:scale-105 transition-transform duration-300"><h3 class="text-xl font-bold text-gray-800">Questions</h3></a>
+        <a href="{% url 'dashboard:badge_list' %}" class="bg-white rounded-2xl shadow-lg p-6 text-center transform hover:scale-105 transition-transform duration-300"><h3 class="text-xl font-bold text-gray-800">Badges 🏆</h3></a>
+    </div>
+
+    <div class="space-y-8">
+        <div>
+            <h2 class="text-3xl font-bold text-gray-800 mb-4">Content Analytics</h2>
+            <div class="space-y-2">
+                {% for grade_data in content_analytics_by_grade %}
+                    <div class="bg-white rounded-lg shadow" x-data="{ isOpen: false }">
+                        <button @click="isOpen = !isOpen" class="w-full flex justify-between items-center p-4">
+                            <h3 class="text-xl font-bold text-gray-700">{{ grade_data.grade.name }}</h3>
+                            <svg class="w-5 h-5 text-gray-500 transform transition-transform" :class="{ 'rotate-180': isOpen }" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                        </button>
+                        <div x-show="isOpen" class="p-4 border-t" style="display: none;">
+                            <div class="space-y-4">
+                                {% for unit_data in grade_data.units_data %}
+                                    <div class="bg-gray-50 rounded-lg" x-data="{ isUnitOpen: false }">
+                                        <button @click="isUnitOpen = !isUnitOpen" class="w-full flex justify-between items-center p-3">
+                                            <div class="text-left">
+                                                <p class="font-semibold text-brand-light-blue">{{ unit_data.unit.title }}</p>
+                                                <p class="text-sm text-red-600 font-bold">Avg. Score: {{ unit_data.unit.average_score|floatformat:1 }}%</p>
+                                            </div>
+                                            <svg class="w-4 h-4 text-gray-500 transform transition-transform" :class="{ 'rotate-180': isUnitOpen }" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                                        </button>
+                                        <div x-show="isUnitOpen" class="px-3 pb-3 border-t" style="display: none;">
+                                            <h4 class="text-sm font-bold text-gray-600 mt-2 mb-1">Most Difficult Questions:</h4>
+                                            <ul class="list-disc list-inside space-y-1">
+                                                {% for question in unit_data.questions %}
+                                                <li class="text-sm text-gray-700 flex justify-between">
+                                                    <span>{{ question.question_text|truncatewords:10 }}</span>
+                                                    <span class="font-semibold text-red-600">{{ question.success_rate|floatformat:1 }}% success</span>
+                                                </li>
+                                                {% endfor %}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                {% empty %}
+                    <p class="text-gray-500">No content analytics data available yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div>
+            <h2 class="text-3xl font-bold text-gray-800 mb-4">Student Analytics</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-white rounded-2xl shadow-lg p-6">
+                    <h3 class="text-2xl font-bold text-gray-800 mb-4">Students per Grade</h3>
+                    <div class="space-y-2">
+                        {% for grade in students_per_grade %}
+                        <div class="flex justify-between items-center bg-gray-50 p-3 rounded-lg">
+                            <span class="font-semibold text-gray-700">{{ grade.name }}</span>
+                            <span class="font-bold text-lg text-brand-light-blue">{{ grade.student_count }} students</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="bg-white rounded-2xl shadow-lg p-6">
+                    <h3 class="text-2xl font-bold text-gray-800 mb-4">Most Active Students</h3>
+                    <div class="space-y-2">
+                        {% for student in most_active_students %}
+                        <div class="flex justify-between items-center bg-gray-50 p-3 rounded-lg">
+                            <span class="font-semibold text-gray-700">{{ student.username }}</span>
+                            <span class="font-bold text-lg text-brand-yellow">{{ student.quiz_count }} quizzes</span>
+                        </div>
+                        {% empty %}
+                        <p class="text-gray-500">No student activity recorded yet.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}My Mistake Bank{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="text-center mb-10">
+        <h1 class="text-4xl font-bold text-gray-800">My Mistake Bank 🏦</h1>
+        <p class="text-xl text-gray-600 mt-2">Review all the questions you answered incorrectly.</p>
+    </div>
+
+    {% if mistakes_by_unit %}
+        <div class="space-y-8">
+            {% for unit, mistakes in mistakes_by_unit.items %}
+                <div class="bg-white rounded-2xl shadow-lg" x-data="{ isOpen: true }">
+                    <button @click="isOpen = !isOpen" class="w-full flex justify-between items-center p-4">
+                        <h2 class="text-2xl font-bold text-gray-700">{{ unit.title }}</h2>
+                        <svg class="w-6 h-6 text-gray-500 transform transition-transform" :class="{ 'rotate-180': isOpen }" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                    </button>
+                    
+                    <div x-show="isOpen" class="p-6 border-t" style="display: none;">
+                        <div class="space-y-6">
+                            {% for mistake in mistakes %}
+                                <div class="p-4 border-l-4 border-red-400 bg-red-50 rounded-r-lg">
+                                    <p class="font-semibold text-gray-800">{{ forloop.counter }}. {{ mistake.question.question_text|safe }}</p>
+                                    <div class="mt-3 text-sm">
+                                        <p><span class="font-bold text-red-600">Your Answer:</span> {{ mistake.student_answer }}</p>
+                                        <p><span class="font-bold text-green-600">Correct Answer:</span> {{ mistake.correct_answer }}</p>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="bg-white rounded-2xl shadow-lg p-8 text-center">
+            <p class="text-gray-500 text-lg">Great job! You haven't made any mistakes yet. Keep up the good work! 🎉</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

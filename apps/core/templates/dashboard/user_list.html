@@ -1,0 +1,50 @@
+<!-- /templates/dashboard/user_list.html -->
+{% extends "base.html" %}
+{% block title %}Manage Students{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <div class="flex justify-between items-center mb-8">
+        <h1 class="text-3xl font-bold text-gray-800">Manage Students</h1>
+        <a href="{% url 'dashboard:student_add' %}" class="px-4 py-2 bg-brand-green text-white font-semibold rounded-lg hover:bg-opacity-90 transition">
+            + Add New Student
+        </a>
+    </div>
+    <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead>
+                    <tr class="border-b">
+                        <th class="py-3 px-4">Username</th>
+                        <th class="py-3 px-4">Full Name</th>
+                        <th class="py-3 px-4">Grade</th>
+                        <th class="py-3 px-4 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students %}
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="py-3 px-4 font-semibold">{{ student.username }}</td>
+                        <td class="py-3 px-4">{{ student.get_full_name|default:"N/A" }}</td>
+                        <td class="py-3 px-4">{{ student.grade.name|default:"N/A" }}</td>
+                        <td class="py-3 px-4 text-right space-x-2">
+                            <a href="{% url 'dashboard:student_progress_detail' pk=student.pk %}" class="text-blue-500 hover:underline">Progress</a>
+                            <a href="{% url 'dashboard:student_edit' pk=student.pk %}" class="text-green-500 hover:underline">Edit</a>
+                            <a href="{% url 'dashboard:student_delete' pk=student.pk %}" class="text-red-500 hover:underline">Delete</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="text-center py-8 text-gray-500">No students have been created yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+
+
+
+
+

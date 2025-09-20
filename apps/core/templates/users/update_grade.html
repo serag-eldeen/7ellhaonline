@@ -1,0 +1,35 @@
+<!-- /templates/users/update_grade.html -->
+{% extends "base.html" %}
+
+{% block title %}Update Your Grade{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto bg-white rounded-2xl shadow-lg p-8">
+    <h1 class="text-3xl font-bold text-gray-800 mb-6">
+        Change Your Grade
+    </h1>
+    <p class="text-gray-600 mb-6">Select your new grade level from the list below. Your lesson dashboard will update accordingly.</p>
+
+    <form method="post" novalidate>
+        {% csrf_token %}
+        <div>
+            <label for="{{ form.grade.id_for_label }}" class="text-sm font-semibold text-gray-600 block mb-1">
+                {{ form.grade.label }}
+            </label>
+            {{ form.grade }}
+            {% for error in form.grade.errors %}
+                <p class="text-red-500 text-xs mt-1">{{ error }}</p>
+            {% endfor %}
+        </div>
+        
+        <div class="mt-8 flex justify-end space-x-4">
+            <a href="{% url 'academics:student_profile' %}" class="px-6 py-2 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition duration-300">
+                Cancel
+            </a>
+            <button type="submit" class="px-6 py-2 bg-brand-light-blue text-white font-bold rounded-lg hover:bg-opacity-90 transition duration-300">
+                Save Changes
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,70 @@
+<!-- /templates/users/signup.html -->
+{% extends "base.html" %}
+
+{% block title %}Create Your Account{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto bg-white rounded-2xl shadow-lg p-8">
+    <h2 class="text-3xl font-bold text-center text-gray-800 mb-6">Create Your Account! 🎉</h2>
+
+    <!-- Display All Form Errors (both field-specific and general) -->
+    {% if form.errors %}
+    <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg mb-6" role="alert">
+        <p class="font-bold">Please correct the errors below:</p>
+        <ul class="mt-2 list-disc list-inside">
+            {% for field in form %}
+                {% for error in field.errors %}
+                <li>{{ field.label }}: {{ error }}</li>
+                {% endfor %}
+            {% endfor %}
+            {% for error in form.non_field_errors %}
+                <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <form method="post" novalidate>
+        {% csrf_token %}
+        
+        <div class="space-y-4">
+            <!-- Manually render each field for maximum stability -->
+            <div>
+                <label for="id_username" class="text-sm font-semibold text-gray-600 block mb-1">Username</label>
+                <input type="text" name="username" id="id_username" class="w-full px-4 py-2 mt-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition" required>
+            </div>
+            <div>
+                <label for="id_first_name" class="text-sm font-semibold text-gray-600 block mb-1">First Name</label>
+                <input type="text" name="first_name" id="id_first_name" class="w-full px-4 py-2 mt-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition">
+            </div>
+            <div>
+                <label for="id_last_name" class="text-sm font-semibold text-gray-600 block mb-1">Last Name</label>
+                <input type="text" name="last_name" id="id_last_name" class="w-full px-4 py-2 mt-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition">
+            </div>
+            <div>
+                <label for="id_email" class="text-sm font-semibold text-gray-600 block mb-1">Email Address</label>
+                <input type="email" name="email" id="id_email" class="w-full px-4 py-2 mt-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition" required>
+            </div>
+            <div>
+                <label for="id_grade" class="text-sm font-semibold text-gray-600 block mb-1">Grade</label>
+                <!-- This simple syntax works because the styling is now handled in forms.py -->
+                {{ form.grade }}
+            </div>
+            <div>
+                <label for="id_password1" class="text-sm font-semibold text-gray-600 block mb-1">Password</label>
+                <input type="password" name="password1" id="id_password1" class="w-full px-4 py-2 mt-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition" required>
+            </div>
+            <div>
+                <label for="id_password2" class="text-sm font-semibold text-gray-600 block mb-1">Confirm Password</label>
+                <input type="password" name="password2" id="id_password2" class="w-full px-4 py-2 mt-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition" required>
+            </div>
+        </div>
+        
+        <div class="mt-8">
+            <button type="submit" class="w-full py-3 px-4 bg-brand-light-blue text-white font-bold rounded-lg hover:bg-opacity-90 transition duration-300 text-lg">
+                Sign Up
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

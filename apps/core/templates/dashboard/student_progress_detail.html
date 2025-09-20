@@ -1,0 +1,71 @@
+<!-- /templates/dashboard/student_progress_detail.html -->
+{% extends "base.html" %}
+
+{% block title %}Progress for {{ student.username }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="bg-white rounded-2xl shadow-lg p-8 mb-8 text-center">
+        <h1 class="text-4xl font-bold text-gray-800">Progress for {{ student.get_full_name|default:student.username }}</h1>
+        <p class="text-lg text-gray-600 mt-2">
+            Current Grade: <span class="font-bold text-brand-light-blue">{{ student.grade.name }}</span>
+        </p>
+    </div>
+
+    {% for grade, data in progress_by_grade.items %}
+    <div class="mb-10">
+        <h2 class="text-3xl font-bold text-gray-800 mb-4">
+            Progress in: {{ grade.name }}
+            {% if grade == student.grade %}<span class="text-sm bg-brand-green text-white rounded-full px-3 py-1 ml-2">Current</span>{% endif %}
+        </h2>
+        
+        <!-- Statistics Cards -->
+        <div class="grid md:grid-cols-2 gap-8 mb-8">
+            <div class="bg-white rounded-2xl shadow-lg p-6 text-center">
+                <p class="text-lg font-semibold text-gray-500">Quizzes Taken</p>
+                <p class="text-6xl font-black text-brand-yellow mt-2">{{ data.total_quizzes }}</p>
+            </div>
+            <div class="bg-white rounded-2xl shadow-lg p-6 text-center">
+                <p class="text-lg font-semibold text-gray-500">Average Score</p>
+                <p class="text-6xl font-black text-brand-green mt-2">{{ data.average_score|floatformat:0 }}%</p>
+            </div>
+        </div>
+
+        <!-- Recent Activity for this grade -->
+        <div class="bg-white rounded-2xl shadow-lg p-8">
+            <h3 class="text-2xl font-bold text-gray-800 mb-4">Activity in {{ grade.name }}</h3>
+            <div class="space-y-4">
+                {% for result in data.results|slice:":5" %}
+                <a href="{% url 'dashboard:quiz_attempt_detail' pk=result.pk %}" class="block bg-gray-50 p-4 rounded-lg hover:bg-gray-100 transition">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="font-bold text-gray-700">{{ result.unit.title }}</p>
+                            <p class="text-sm text-gray-500">{{ result.completed_at|date:"F j, Y" }}</p>
+                        </div>
+                        <div>
+                            <span class="font-bold text-xl 
+                                {% if result.score >= 80 %}text-brand-green{% elif result.score >= 50 %}text-brand-light-blue{% else %}text-brand-red{% endif %}">
+                                {{ result.score|floatformat:0 }}%
+                            </span>
+                        </div>
+                    </div>
+                </a>
+                {% empty %}
+                <p class="text-gray-500 text-center py-4">This student hasn't completed any quizzes in this grade.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="bg-white rounded-2xl shadow-lg p-8 text-center">
+        <p class="text-gray-500 text-center py-4">This student has no quiz history.</p>
+    </div>
+    {% endfor %}
+    
+    <div class="mt-8 text-center">
+        <a href="{% url 'dashboard:user_list' %}" class="px-6 py-2 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition duration-300">
+            &larr; Back to All Students
+        </a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Units{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* Responsive table styles */
+    @media (max-width: 767px) {
+        .responsive-table thead { display: none; }
+        .responsive-table tbody, .responsive-table tr, .responsive-table td { display: block; width: 100%; }
+        .responsive-table tr { margin-bottom: 1rem; border: 1px solid #e5e7eb; border-radius: 0.75rem; padding: 1rem; }
+        .responsive-table td { padding-left: 50%; position: relative; text-align: right; border-bottom: 1px solid #f3f4f6; padding-bottom: 0.5rem; margin-bottom: 0.5rem; }
+        .responsive-table td:last-child { border-bottom: 0; margin-bottom: 0; padding-bottom: 0; }
+        .responsive-table td::before { content: attr(data-label); position: absolute; left: 0.5rem; width: 45%; padding-right: 0.5rem; font-weight: 600; text-align: left; color: #4b5563; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <div class="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
+        <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">Manage Units</h1>
+        <a href="{% url 'dashboard:unit_add' %}" class="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-brand-green text-white font-semibold rounded-lg hover:bg-opacity-90 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" /></svg>
+            Add New Unit
+        </a>
+    </div>
+
+    {% if units_by_grade %}
+        {% for grade, units_in_grade in units_by_grade.items %}
+            <div class="mt-4 bg-white rounded-2xl shadow-lg overflow-hidden" x-data="{ isOpen: true }">
+                
+                <button @click="isOpen = !isOpen" class="w-full flex justify-between items-center p-4 bg-gray-50 hover:bg-gray-100 focus:outline-none">
+                    <h2 class="text-2xl font-bold text-gray-700">{{ grade.name }}</h2>
+                    <svg class="w-6 h-6 text-gray-500 transform transition-transform" :class="{ 'rotate-180': isOpen }" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+
+                <div x-show="isOpen" class="p-6" style="display: none;">
+                    <table class="w-full text-left responsive-table">
+                        <thead class="bg-gray-50 border-b border-gray-200">
+                            <tr>
+                                <th class="py-3 px-6 text-sm font-semibold text-gray-600 uppercase">Unit Title</th>
+                                <th class="py-3 px-6 text-sm font-semibold text-gray-600 uppercase">Unit #</th>
+                                <th class="py-3 px-6 text-sm font-semibold text-gray-600 uppercase">Status</th>
+                                <th class="py-3 px-6 text-sm font-semibold text-gray-600 uppercase text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for unit in units_in_grade %}
+                            <tr class="border-b border-gray-200 last:border-b-0 hover:bg-gray-50">
+                                <td data-label="Title" class="py-4 px-6 font-semibold text-gray-800">{{ unit.title }}</td>
+                                <td data-label="Unit #" class="py-4 px-6 text-gray-600">{{ unit.unit_number }}</td>
+                                <td data-label="Status" class="py-4 px-6">
+                                    {% if unit.is_published %}
+                                        <span class="py-1 px-3 text-xs font-bold text-green-800 bg-green-100 rounded-full">Published</span>
+                                    {% else %}
+                                        <span class="py-1 px-3 text-xs font-bold text-gray-800 bg-gray-100 rounded-full">Draft</span>
+                                    {% endif %}
+                                </td>
+                                <td data-label="Actions" class="py-4 px-6">
+                                    <div class="flex items-center justify-end gap-3">
+                                        <form action="{% url 'dashboard:unit_toggle_publish' pk=unit.pk %}" method="post" class="inline">
+                                            {% csrf_token %}
+                                            {% if unit.is_published %}
+                                                <button type="submit" class="py-1 px-3 text-sm font-semibold text-yellow-800 bg-yellow-100 rounded-full hover:bg-yellow-200">Unpublish</button>
+                                            {% else %}
+                                                <button type="submit" class="py-1 px-3 text-sm font-semibold text-green-800 bg-green-100 rounded-full hover:bg-green-200">Publish</button>
+                                            {% endif %}
+                                        </form>
+                                        <a href="{% url 'dashboard:unit_edit' pk=unit.pk %}" class="py-1 px-3 text-sm font-semibold text-blue-600 bg-blue-100 rounded-full hover:bg-blue-200">Edit</a>
+                                        <a href="{% url 'dashboard:unit_delete' pk=unit.pk %}" class="py-1 px-3 text-sm font-semibold text-red-600 bg-red-100 rounded-full hover:bg-red-200">Delete</a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="bg-white rounded-2xl shadow-lg p-8 text-center">
+            <p class="text-gray-500">No units have been created yet.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

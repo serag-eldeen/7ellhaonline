@@ -1,0 +1,79 @@
+<!-- /templates/dashboard/quiz_attempt_detail.html -->
+{% extends "base.html" %}
+
+{% block title %}Quiz Details{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="bg-white rounded-2xl shadow-lg p-8 mb-8">
+        <h1 class="text-3xl font-bold text-gray-800">Quiz Attempt Details</h1>
+        <div class="mt-4 border-t pt-4 text-gray-600 space-y-1">
+            <p><strong>Student:</strong> {{ quiz_result.student.get_full_name|default:quiz_result.student.username }}</p>
+            <p><strong>Unit:</strong> {{ quiz_result.unit.title }}</p>
+            <p><strong>Date:</strong> {{ quiz_result.completed_at|date:"F j, Y, P" }}</p>
+            <p><strong>Final Score:</strong> 
+                <span class="font-bold text-xl {% if quiz_result.score >= 80 %}text-brand-green{% elif quiz_result.score >= 50 %}text-brand-light-blue{% else %}text-brand-red{% endif %}">
+                    {{ quiz_result.score|floatformat:0 }}%
+                </span>
+            </p>
+        </div>
+    </div>
+
+    <div class="space-y-6">
+        {% for detail in detailed_answers %}
+        <div class="bg-white rounded-2xl shadow-lg p-6">
+            <div class="flex justify-between items-start">
+                <p class="text-lg font-semibold text-gray-800">{{ forloop.counter }}. {{ detail.question.question_text|safe }}</p>
+                <span class="text-2xl">{% if detail.is_correct %}✅{% else %}❌{% endif %}</span>
+            </div>
+            <div class="mt-4 border-t pt-4">
+                {% if detail.question.question_type in 'MCQ,TF,SA,FITB' %}
+                    <p class="text-gray-700"><strong>Student's Answer:</strong> <span class="{% if not detail.is_correct %}text-red-600 font-semibold{% endif %}">{{ detail.student_answer }}</span></p>
+                    {% if not detail.is_correct %}<p class="text-gray-700"><strong>Correct Answer:</strong> <span class="text-green-600 font-semibold">{{ detail.correct_answer }}</span></p>{% endif %}
+                {% elif detail.question.question_type == 'MCQI' %}
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="font-semibold mb-2">Student's Answer:</p>
+                            <img src="{{ detail.student_answer.answer_image.url }}" class="rounded-lg border-4 {% if detail.is_correct %}border-green-500{% else %}border-red-500{% endif %}">
+                        </div>
+                        {% if not detail.is_correct %}
+                        <div>
+                            <p class="font-semibold mb-2">Correct Answer:</p>
+                            <img src="{{ detail.correct_answer.answer_image.url }}" class="rounded-lg border-4 border-green-500">
+                        </div>
+                        {% endif %}
+                    </div>
+                {% elif detail.question.question_type in 'MATCH,MATI' %}
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><h4 class="font-semibold text-center mb-2">Prompt</h4></div>
+                        <div><h4 class="font-semibold text-center mb-2">Student's Match</h4></div>
+                    </div>
+                    {% for correct_pair in detail.correct_answer %}
+                        {% for student_pair in detail.student_answer %}
+                            {% if forloop.parentloop.counter == forloop.counter %}
+                                <div class="grid grid-cols-2 gap-4 items-center border-t py-2">
+                                    <div class="p-2 bg-gray-100 rounded-lg text-center">
+                                        {% if correct_pair.prompt_image %}<img src="{{ correct_pair.prompt_image.url }}" class="h-16 mx-auto">{% endif %}
+                                        {% if correct_pair.prompt_text %}<p>{{ correct_pair.prompt_text }}</p>{% endif %}
+                                    </div>
+                                    <div class="p-2 rounded-lg text-center {% if correct_pair.id == student_pair.id %}bg-green-100{% else %}bg-red-100{% endif %}">
+                                        {% if student_pair.match_image %}<img src="{{ student_pair.match_image.url }}" class="h-16 mx-auto">{% endif %}
+                                        {% if student_pair.match_text %}<p>{{ student_pair.match_text }}</p>{% endif %}
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="mt-8 text-center">
+        <a href="{% url 'dashboard:student_progress_detail' pk=quiz_result.student.pk %}" class="px-6 py-2 bg-gray-200 text-gray-800 font-semibold rounded-lg">
+            &larr; Back to Student Progress
+        </a>
+    </div>
+</div>
+{% endblock %}

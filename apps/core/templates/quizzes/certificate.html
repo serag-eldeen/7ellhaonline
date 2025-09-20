@@ -1,0 +1,131 @@
+<!-- /templates/quizzes/certificate.html -->
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generating Certificate...</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Nunito:wght@400;600&display=swap" rel="stylesheet">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+        body {
+            background-color: #f3f4f6;
+            font-family: 'Nunito', sans-serif;
+        }
+        /* This style hides the certificate but keeps it in the DOM for rendering */
+        .hidden-for-render {
+            position: absolute;
+            left: -9999px;
+            top: auto;
+            width: 11in; /* Fixed size for consistent PDF generation */
+            height: 8.5in;
+        }
+        .certificate-container {
+            width: 11in;
+            height: 8.5in;
+            background-color: white;
+            position: relative;
+            font-family: 'Playfair Display', serif;
+        }
+        .certificate-border {
+            position: absolute;
+            top: 20px; left: 20px; right: 20px; bottom: 20px;
+            border: 10px solid #4fc3f7;
+            padding: 15px;
+            border-style: double;
+        }
+        .signature {
+            font-family: 'Brush Script MT', cursive;
+            font-size: 2rem;
+            border-top: 2px solid #374151;
+            padding-top: 4px;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4">
+
+    <!-- The visible part of the page -->
+    <div id="status-container" class="text-center">
+        <div id="loading-spinner" class="animate-spin rounded-full h-16 w-16 border-b-4 border-brand-light-blue mx-auto"></div>
+        <h1 id="status-text" class="text-2xl font-bold text-gray-700 mt-4">Generating your certificate...</h1>
+        <p class="text-gray-500 mt-2">The download will start automatically.</p>
+        <div id="action-buttons" class="mt-8" style="display: none;">
+            <button onclick="generatePDF()" class="px-8 py-3 bg-brand-light-blue text-white font-bold rounded-lg shadow-lg hover:bg-opacity-90 transition">
+                Download Again
+            </button>
+            <a href="{% url 'quizzes:quiz_result' result_id=result.id %}" class="ml-4 text-gray-600 hover:underline">Back to Result</a>
+        </div>
+    </div>
+
+    <!-- The hidden certificate that will be converted to PDF -->
+    <div id="certificate-to-download" class="hidden-for-render">
+        <div class="certificate-container flex items-center justify-center">
+            <div class="certificate-border flex flex-col items-center justify-center text-center p-4">
+                <h1 class="text-5xl font-bold text-gray-800">Certificate of Achievement</h1>
+                <p class="text-xl mt-8 font-sans text-gray-600">This certificate is proudly presented to</p>
+                <h2 id="student-name" class="text-6xl font-bold text-brand-light-blue mt-4">{{ result.student.get_full_name|default:result.student.username }}</h2>
+                <p class="text-xl mt-8 font-sans text-gray-600">for successfully completing the unit</p>
+                <h3 class="text-3xl font-bold text-gray-700 mt-2">"{{ result.unit.title }}"</h3>
+                <p class="text-xl mt-2 font-sans text-gray-600">with a score of <span class="font-bold text-brand-green">{{ result.score|floatformat:0 }}%</span></p>
+                <div class="mt-16 w-full flex justify-between items-end px-8">
+                    <div class="text-center">
+                        <p class="font-sans text-lg">{{ result.completed_at|date:"F j, Y" }}</p>
+                        <p class="font-sans text-sm font-semibold border-t-2 border-gray-700 pt-1">Date</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="signature text-brand-light-blue">Serag Mostafa</p>
+                        <p class="font-sans text-sm font-semibold">Eng. Serag Mostafa</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function generatePDF() {
+            const certificate = document.getElementById('certificate-to-download');
+            const studentName = document.getElementById('student-name').textContent.trim();
+            const fileName = `Certificate-${studentName}.pdf`;
+
+            const statusText = document.getElementById('status-text');
+            const spinner = document.getElementById('loading-spinner');
+            const actionButtons = document.getElementById('action-buttons');
+            
+            statusText.textContent = 'Capturing certificate design...';
+            spinner.style.display = 'block';
+            actionButtons.style.display = 'none';
+
+            html2canvas(certificate, { scale: 2, useCORS: true })
+                .then(canvas => {
+                    statusText.textContent = 'Converting to PDF...';
+                    const imgData = canvas.toDataURL('image/png');
+                    const { jsPDF } = window.jspdf;
+                    const pdf = new jsPDF({ orientation: 'landscape', unit: 'in', format: [11, 8.5] });
+                    pdf.addImage(imgData, 'PNG', 0, 0, 11, 8.5);
+                    
+                    statusText.textContent = 'Download starting...';
+                    pdf.save(fileName);
+
+                    statusText.textContent = 'Certificate downloaded successfully!';
+                    spinner.style.display = 'none';
+                    actionButtons.style.display = 'block';
+                })
+                .catch(err => {
+                    console.error("PDF Generation Error:", err);
+                    statusText.textContent = 'Sorry, an error occurred while generating the PDF.';
+                });
+        }
+
+        window.onload = function() {
+            generatePDF();
+        };
+    </script>
+</body>
+</html>

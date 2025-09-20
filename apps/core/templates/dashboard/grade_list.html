@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Grades{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* Custom styles for the responsive table. On screens smaller than md, we hide the header and display rows as cards. */
+    @media (max-width: 767px) {
+        .responsive-table thead {
+            display: none;
+        }
+        .responsive-table tbody,
+        .responsive-table tr,
+        .responsive-table td {
+            display: block;
+            width: 100%;
+        }
+        .responsive-table tr {
+            margin-bottom: 1rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.75rem;
+            padding: 1rem;
+        }
+        .responsive-table td {
+            padding-left: 50%; /* Make space for the label */
+            position: relative;
+            text-align: right; /* Align text to the right */
+            border-bottom: 1px solid #f3f4f6;
+            padding-bottom: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .responsive-table td:last-child {
+            border-bottom: 0;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        .responsive-table td::before {
+            content: attr(data-label);
+            position: absolute;
+            left: 0.5rem; /* Position the label on the left */
+            width: 45%;
+            padding-right: 0.5rem;
+            font-weight: 600;
+            text-align: left; /* Align label text to the left */
+            color: #4b5563; /* gray-600 */
+        }
+    }
+</style>
+{% endblock %}
+
+
+{% block content %}
+<div class="max-w-5xl mx-auto">
+    <div class="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
+        <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">Manage Grades</h1>
+        <a href="{% url 'dashboard:grade_add' %}" class="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-brand-green text-white font-semibold rounded-lg hover:bg-opacity-90 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" /></svg>
+            Add New Grade
+        </a>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+        <table class="w-full text-left responsive-table">
+            <thead class="bg-gray-50 border-b border-gray-200">
+                <tr>
+                    <th class="py-3 px-6 text-sm font-semibold text-gray-600 uppercase">Grade Name</th>
+                    <th class="py-3 px-6 text-sm font-semibold text-gray-600 uppercase">Description</th>
+                    <th class="py-3 px-6 text-sm font-semibold text-gray-600 uppercase text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for grade in grades %}
+                <tr class="border-b border-gray-200 hover:bg-gray-50">
+                    <td data-label="Grade Name" class="py-4 px-6 font-semibold text-gray-800">{{ grade.name }}</td>
+                    <td data-label="Description" class="py-4 px-6 text-gray-600">{{ grade.description|truncatewords:10 }}</td>
+                    <td data-label="Actions" class="py-4 px-6">
+                        <div class="flex items-center justify-end gap-3">
+                             <a href="{% url 'dashboard:grade_edit' pk=grade.pk %}" class="py-1 px-3 text-sm font-semibold text-blue-600 bg-blue-100 rounded-full hover:bg-blue-200">Edit</a>
+                             <a href="{% url 'dashboard:grade_delete' pk=grade.pk %}" class="py-1 px-3 text-sm font-semibold text-red-600 bg-red-100 rounded-full hover:bg-red-200">Delete</a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" class="text-center py-8 text-gray-500">
+                        No grades have been created yet.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

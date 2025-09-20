@@ -1,0 +1,50 @@
+<!-- /templates/quizzes/quiz_result.html -->
+{% extends "base.html" %}
+
+{% block title %}Your Quiz Result!{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto text-center bg-white rounded-2xl shadow-lg p-8">
+    
+    {% if result.score >= 80 %}
+        <h1 class="text-4xl font-bold text-brand-green">Excellent Work! 🌟</h1>
+        <p class="text-lg text-gray-600 mt-2">You're a true Math Whiz!</p>
+    {% elif result.score >= 50 %}
+        <h1 class="text-4xl font-bold text-brand-light-blue">Good Job! 👍</h1>
+        <p class="text-lg text-gray-600 mt-2">You're doing great, keep practicing!</p>
+    {% else %}
+        <h1 class="text-4xl font-bold text-brand-red">Keep Trying! 💪</h1>
+        <p class="text-lg text-gray-600 mt-2">Every mistake is a chance to learn something new.</p>
+    {% endif %}
+
+    <div class="my-8">
+        <p class="text-lg text-gray-700">You scored:</p>
+        <p class="text-7xl font-black text-brand-light-blue my-2">{{ result.score|floatformat:0 }}%</p>
+    </div>
+
+    <div class="mt-8 flex flex-col sm:flex-row justify-center items-center gap-4">
+        <a href="{% url 'academics:unit_list' %}" class="px-8 py-4 bg-brand-yellow text-gray-800 font-bold rounded-full text-xl shadow-lg hover:scale-105 transform transition-transform duration-300">
+            Back to Dashboard
+        </a>
+        
+        {% if result.score >= 80 %}
+        <a href="{% url 'quizzes:certificate' result_id=result.id %}" class="px-8 py-4 bg-brand-green text-white font-bold rounded-full text-xl shadow-lg hover:scale-105 transform transition-transform duration-300">
+            View Certificate 🎖️
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const score = {{ result.score }};
+    if (score >= 80) {
+        confetti({ particleCount: 150, spread: 90, origin: { y: 0.6 } });
+    }
+});
+</script>
+{% endblock %}

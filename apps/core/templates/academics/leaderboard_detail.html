@@ -1,0 +1,83 @@
+<!-- /templates/academics/leaderboard_detail.html -->
+{% extends "base.html" %}
+
+{% block title %}Leaderboard: {{ grade.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <div class="text-center mb-10">
+        <h1 class="text-4xl font-bold text-gray-800">Leaderboard: {{ grade.name }}</h1>
+        <p class="text-xl text-gray-600 mt-2">See the top students in this grade!</p>
+    </div>
+
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <!-- Top Scorers Leaderboard -->
+        <div class="bg-white rounded-2xl shadow-lg p-6">
+            <h2 class="text-2xl font-bold text-center text-gray-800 mb-4">🏆 Top Scorers</h2>
+            <div class="space-y-3">
+                {% for student in top_scorers %}
+                <div class="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                    <div class="flex items-center">
+                        <span class="text-xl font-bold text-gray-500 w-8">{{ forloop.counter }}.</span>
+                        <span class="font-semibold text-gray-700">{{ student.get_full_name|default:student.username }}</span>
+                    </div>
+                    <div class="flex items-center">
+                        <span class="font-bold text-lg text-brand-green">{{ student.average_score|floatformat:0 }}%</span>
+                        <span class="text-2xl ml-2">{% if forloop.counter == 1 %}🥇{% elif forloop.counter == 2 %}🥈{% elif forloop.counter == 3 %}🥉{% endif %}</span>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-gray-500 text-center py-4">No data to display yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Most Active Students Leaderboard -->
+        <div class="bg-white rounded-2xl shadow-lg p-6">
+            <h2 class="text-2xl font-bold text-center text-gray-800 mb-4">🏃 Most Active</h2>
+            <div class="space-y-3">
+                {% for student in most_active %}
+                <div class="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                    <div class="flex items-center">
+                        <span class="text-xl font-bold text-gray-500 w-8">{{ forloop.counter }}.</span>
+                        <span class="font-semibold text-gray-700">{{ student.get_full_name|default:student.username }}</span>
+                    </div>
+                    <div class="flex items-center">
+                        <span class="font-bold text-lg text-brand-yellow">{{ student.total_quizzes }} Quiz(zes)</span>
+                        <span class="text-2xl ml-2">{% if forloop.counter == 1 %}🥇{% elif forloop.counter == 2 %}🥈{% elif forloop.counter == 3 %}🥉{% endif %}</span>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-gray-500 text-center py-4">No data to display yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- New: Fastest Solvers Leaderboard -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 md:col-span-2 lg:col-span-1">
+            <h2 class="text-2xl font-bold text-center text-gray-800 mb-4">⚡️ Fastest Solvers (100% Score)</h2>
+            <div class="space-y-3">
+                {% for student in fastest_solvers %}
+                <div class="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                    <div class="flex items-center">
+                        <span class="text-xl font-bold text-gray-500 w-8">{{ forloop.counter }}.</span>
+                        <span class="font-semibold text-gray-700">{{ student.get_full_name|default:student.username }}</span>
+                    </div>
+                    <div class="flex items-center">
+                        <span class="font-bold text-lg text-brand-light-blue">{{ student.avg_time_seconds|floatformat:0 }}s</span>
+                        <span class="text-2xl ml-2">{% if forloop.counter == 1 %}🥇{% elif forloop.counter == 2 %}🥈{% elif forloop.counter == 3 %}🥉{% endif %}</span>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-gray-500 text-center py-4">No one has scored 100% yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <div class="mt-10 text-center">
+        <a href="{% url 'academics:leaderboard_selection' %}" class="px-6 py-2 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition duration-300">
+            &larr; Back to Grade Selection
+        </a>
+    </div>
+</div>
+{% endblock %}

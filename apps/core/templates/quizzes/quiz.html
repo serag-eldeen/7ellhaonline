@@ -1,0 +1,358 @@
+{% extends "base.html" %}
+
+{% block title %}Quiz: {{ unit.title }}{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+<style>
+    .quiz-option { cursor: pointer; transition: all 0.2s ease-in-out; }
+    .quiz-option.selected { border-color: #4fc3f7; background-color: #e3f2fd; box-shadow: 0 0 0 3px rgba(79, 195, 247, 0.4); }
+    .quiz-option.correct, .matching-item.correct { background-color: #e8f5e9 !important; border-color: #81c784 !important; }
+    .quiz-option.incorrect, .matching-item.incorrect { background-color: #ffebee !important; border-color: #e57373 !important; }
+
+    .matching-container { position: relative; }
+    .matching-svg-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+    .matching-item-wrapper { display: flex; justify-content: space-between; align-items: center; }
+    .connect-point {
+        width: 20px; height: 20px;
+        background-color: white;
+        border: 3px solid #4fc3f7;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: background-color 0.2s;
+        z-index: 2;
+    }
+    .connect-point:hover, .connect-point.selected { background-color: #4fc3f7; }
+    .connect-point.connected { background-color: #81c784; border-color: #81c784; }
+
+    .quiz-header {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        backdrop-filter: blur(8px);
+        background-color: rgba(255, 255, 255, 0.85);
+    }
+    .progress-bar-bg { background-color: #e5e7eb; }
+    .progress-bar-fill { background-color: #81c784; transition: width 0.3s ease-in-out; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="quiz-header border-b shadow-md mb-8 p-4 rounded-b-2xl">
+    <div class="max-w-3xl mx-auto">
+        <div class="flex justify-between items-center mb-2">
+            <div class="font-bold text-lg text-brand-light-blue">Time Left: <span id="timer">{{ minutes_remaining }}:{% if seconds_remaining < 10 %}0{% endif %}{{ seconds_remaining }}</span></div>
+            <div class="font-bold text-lg text-gray-700">Progress: <span id="progress-text">0 / {{ questions|length }}</span></div>
+        </div>
+        <div class="w-full progress-bar-bg rounded-full h-4 overflow-hidden">
+            <div id="progress-bar" class="progress-bar-fill h-4 rounded-full" style="width: 0%"></div>
+        </div>
+    </div>
+</div>
+
+<div class="max-w-3xl mx-auto">
+    <div class="text-center mb-10">
+        <h1 class="text-4xl font-bold text-gray-800">{{ unit.title }}</h1>
+        <p class="text-lg text-gray-600 mt-2">Answer the questions below.</p>
+    </div>
+
+    <form id="quiz-form" data-unit-id="{{ unit.id }}">
+        {% csrf_token %}
+        <div class="space-y-10">
+            {% for question in questions %}
+            <div class="bg-white rounded-2xl shadow-lg p-8 question-card" data-question-id="{{ question.id }}" data-question-type="{{ question.question_type }}">
+                <div class="flex justify-between items-start">
+                    <div class="flex items-center gap-4">
+                        <p class="text-xl font-semibold text-gray-800"><span class="text-brand-light-blue font-bold">Question {{ forloop.counter }}:</span> {{ question.question_text|safe }}</p>
+                        <button type="button" class="speak-button text-gray-500 hover:text-brand-light-blue" title="Read question aloud">
+                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.858 8.464a5 5 0 000 7.072m2.829-9.9a9 9 0 000 12.728M12 12a3 3 0 100-6 3 3 0 000 6z" /></svg>
+                        </button>
+                    </div>
+                    <div class="text-3xl feedback-icon"></div>
+                </div>
+
+                <div class="mt-6">
+                    {% if question.question_type == 'MCQ' or question.question_type == 'TF' %}
+                        <div class="space-y-4">
+                            {% for answer in question.answers.all %}
+                            <label class="quiz-option block p-4 border-2 border-gray-200 rounded-xl">
+                                <input type="radio" name="question_{{ question.id }}" value="{{ answer.id }}" class="hidden" data-is-correct="{{ answer.is_correct|yesno:'true,false' }}">
+                                <span class="text-lg">{{ answer.answer_text }}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    {% elif question.question_type == 'MCQI' %}
+                        <div class="grid grid-cols-2 gap-4">
+                            {% for answer in question.answers.all %}
+                            <label class="quiz-option block border-2 border-gray-200 rounded-xl p-2">
+                                <input type="radio" name="question_{{ question.id }}" value="{{ answer.id }}" class="hidden" data-is-correct="{{ answer.is_correct|yesno:'true,false' }}">
+                                <img src="{{ answer.answer_image.url }}" alt="Answer choice" class="w-full h-auto object-cover rounded-lg">
+                            </label>
+                            {% endfor %}
+                        </div>
+                    {% elif question.question_type == 'SA' or question.question_type == 'FITB' %}
+                        <input type="text" name="question_{{ question.id }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg" placeholder="Type your answer..." data-correct-answer="{{ question.answers.first.answer_text|lower }}">
+                    {% elif question.question_type in 'MATCH,MATI' %}
+                        <div class="matching-container" id="matching-container-{{ question.id }}">
+                            <svg class="matching-svg-overlay" id="svg-{{ question.id }}"></svg>
+                            <div class="flex justify-between gap-8">
+                                <div class="w-1/2 space-y-3">
+                                    {% for pair in question.matching_pairs.all %}
+                                    <div class="matching-item-wrapper">
+                                        <div class="p-2 bg-gray-100 rounded-lg flex-grow text-center">
+                                            {% if pair.prompt_image %}<img src="{{ pair.prompt_image.url }}" class="h-20 mx-auto">{% endif %}
+                                            {% if pair.prompt_text %}<p class="font-semibold">{{ pair.prompt_text }}</p>{% endif %}
+                                        </div>
+                                        <div class="connect-point ml-4" data-point-id="{{ pair.id }}" data-side="prompt"></div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                <div class="w-1/2 space-y-3">
+                                    {% for match in question.shuffled_matches %}
+                                    <div class="matching-item-wrapper">
+                                        <div class="connect-point mr-4" data-point-id="{{ match.id }}" data-side="match"></div>
+                                        <div class="p-2 bg-blue-100 rounded-lg flex-grow text-center">
+                                            {% if match.match_image %}<img src="{{ match.match_image.url }}" class="h-20 mx-auto">{% endif %}
+                                            {% if match.match_text %}<p class="font-semibold">{{ match.match_text }}</p>{% endif %}
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="mt-12 text-center">
+            <button id="submit-btn" type="submit" class="px-10 py-4 bg-brand-light-blue text-white font-bold rounded-full text-xl shadow-lg transition-colors duration-300">Submit Quiz</button>
+            <a id="view-result-btn" href="#" class="px-10 py-4 bg-brand-green text-white font-bold rounded-full text-xl shadow-lg" style="display: none;">View Final Result</a>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const quizForm = document.getElementById('quiz-form');
+    const submitBtn = document.getElementById('submit-btn');
+    const viewResultBtn = document.getElementById('view-result-btn');
+    const timerDisplay = document.getElementById('timer');
+    const progressText = document.getElementById('progress-text');
+    const progressBar = document.getElementById('progress-bar');
+    const totalQuestions = {{ questions|length }};
+    const unitId = quizForm.dataset.unitId;
+    const csrfToken = quizForm.querySelector('input[name="csrfmiddlewaretoken"]').value;
+    
+    let timeRemaining = {{ time_remaining_seconds }};
+    const startTime = Date.now();
+    let quizSubmitted = false;
+    let isForcedSubmit = false; // Flag to indicate if submission is forced by the timer
+
+    // --- Main Submit Handler ---
+    quizForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+        if (quizSubmitted) return;
+
+        // Validation: Only check for unanswered questions if the user clicked manually
+        if (!isForcedSubmit) {
+            const firstUnanswered = findFirstUnansweredQuestion();
+            if (firstUnanswered) {
+                firstUnanswered.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                firstUnanswered.style.transition = 'border 0.3s';
+                firstUnanswered.style.border = '3px solid #e57373';
+                setTimeout(() => { firstUnanswered.style.border = ''; }, 2000);
+                return;
+            }
+        }
+
+        quizSubmitted = true;
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Submitting...';
+        const timeTakenSeconds = Math.round((Date.now() - startTime) / 1000);
+
+        // Lock inputs and collect answers
+        quizForm.querySelectorAll('input, select, textarea').forEach(el => el.disabled = true);
+        document.querySelectorAll('.connect-point').forEach(p => p.style.pointerEvents = 'none');
+
+        const collectedAnswers = {};
+        document.querySelectorAll('.question-card').forEach(card => {
+            card.classList.add('answered');
+            const qId = card.dataset.questionId;
+            const qType = card.dataset.questionType;
+            const feedbackIcon = card.querySelector('.feedback-icon');
+
+            if (qType === 'MCQ' || qType === 'MCQI' || qType === 'TF') {
+                const selected = card.querySelector('input[type="radio"]:checked');
+                if (selected) {
+                    collectedAnswers[qId] = selected.value;
+                    const isCorrect = selected.dataset.isCorrect === 'true';
+                    feedbackIcon.textContent = isCorrect ? '✅' : '❌';
+                    selected.parentElement.classList.add(isCorrect ? 'correct' : 'incorrect');
+                    if (!isCorrect) card.querySelector('input[data-is-correct="true"]').parentElement.classList.add('correct');
+                }
+            } else if (qType === 'SA' || qType === 'FITB') {
+                const input = card.querySelector('input[type="text"]');
+                collectedAnswers[qId] = input.value;
+                const isCorrect = input.value.trim().toLowerCase() === input.dataset.correctAnswer;
+                feedbackIcon.textContent = isCorrect ? '✅' : '❌';
+                input.classList.add(isCorrect ? 'border-green-500' : 'border-red-500', 'border-2');
+            } else if (qType === 'MATCH' || qType === 'MATI') {
+                const container = card.querySelector('.matching-container');
+                collectedAnswers[qId] = container.connections;
+            }
+        });
+
+        // Send data to the server
+        fetch(`/quizzes/unit/${unitId}/submit/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            body: JSON.stringify({ answers: collectedAnswers, time_taken_seconds: timeTakenSeconds })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                viewResultBtn.href = data.redirect_url;
+                submitBtn.style.display = 'none';
+                viewResultBtn.style.display = 'inline-block';
+            } else {
+                alert('An error occurred. Please try again.');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Quiz';
+                quizSubmitted = false;
+            }
+        });
+    });
+
+    // --- Timer Logic ---
+    const timerInterval = setInterval(() => {
+        if (quizSubmitted) {
+            clearInterval(timerInterval);
+            return;
+        }
+        timeRemaining--;
+        const minutes = Math.floor(timeRemaining / 60);
+        const seconds = timeRemaining % 60;
+        timerDisplay.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+
+        if (timeRemaining <= 0) {
+            clearInterval(timerInterval);
+            timerDisplay.textContent = "Time's Up!";
+            if (!quizSubmitted) {
+                isForcedSubmit = true; // Set flag to bypass validation
+                quizForm.dispatchEvent(new Event('submit'));
+            }
+        }
+    }, 1000);
+
+    // --- Helper Functions ---
+    function findFirstUnansweredQuestion() {
+        for (const card of document.querySelectorAll('.question-card')) {
+            const qType = card.dataset.questionType;
+            let isAnswered = false;
+            if (qType === 'MCQ' || qType === 'MCQI' || qType === 'TF') {
+                if (card.querySelector('input[type="radio"]:checked')) isAnswered = true;
+            } else if (qType === 'SA' || qType === 'FITB') {
+                if (card.querySelector('input[type="text"]').value.trim() !== '') isAnswered = true;
+            } else if (qType === 'MATCH' || qType === 'MATI') {
+                const connections = card.querySelector('.matching-container').connections;
+                if (connections && Object.keys(connections).length > 0) isAnswered = true;
+            }
+            if (!isAnswered) return card;
+        }
+        return null;
+    }
+
+    function updateProgress() {
+        let answeredCount = 0;
+        document.querySelectorAll('.question-card').forEach(card => {
+            if (card.querySelector('input[type="radio"]:checked') || (card.querySelector('input[type="text"]') && card.querySelector('input[type="text"]').value.trim() !== '') || (card.querySelector('.matching-container') && card.querySelector('.matching-container').connections && Object.keys(card.querySelector('.matching-container').connections).length > 0)) {
+                answeredCount++;
+            }
+        });
+        progressText.textContent = `${answeredCount} / ${totalQuestions}`;
+        progressBar.style.width = `${(totalQuestions > 0 ? (answeredCount / totalQuestions) * 100 : 0)}%`;
+    }
+    quizForm.addEventListener('input', updateProgress);
+    quizForm.addEventListener('change', updateProgress);
+    
+    // --- UI Interaction Logic (unchanged from original) ---
+    document.querySelectorAll('.quiz-option').forEach(label => {
+        label.addEventListener('click', () => {
+            if (label.closest('.question-card').classList.contains('answered')) return;
+            label.parentElement.querySelectorAll('.quiz-option').forEach(option => option.classList.remove('selected'));
+            label.classList.add('selected');
+        });
+    });
+
+    function speakQuestion(questionCard) {
+        window.speechSynthesis.cancel();
+        let textToSpeak = questionCard.querySelector('p.font-semibold').textContent;
+        const utterance = new SpeechSynthesisUtterance(textToSpeak);
+        utterance.lang = 'en-US';
+        window.speechSynthesis.speak(utterance);
+    }
+    document.querySelectorAll('.speak-button').forEach(button => {
+        button.addEventListener('click', () => speakQuestion(button.closest('.question-card')));
+    });
+
+    document.querySelectorAll('.matching-container').forEach(container => {
+        const svg = container.querySelector('.matching-svg-overlay');
+        let startPoint = null;
+        container.connections = {};
+        
+        const getPointCenter = (point) => {
+            const rect = point.getBoundingClientRect();
+            const containerRect = container.getBoundingClientRect();
+            return { x: rect.left + rect.width / 2 - containerRect.left, y: rect.top + rect.height / 2 - containerRect.top };
+        };
+
+        const drawLine = (start, end) => {
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', start.x); line.setAttribute('y1', start.y);
+            line.setAttribute('x2', end.x); line.setAttribute('y2', end.y);
+            line.setAttribute('stroke', '#4fc3f7'); line.setAttribute('stroke-width', 4);
+            line.setAttribute('stroke-linecap', 'round');
+            return line;
+        };
+
+        container.addEventListener('click', function(e) {
+            if (!e.target.classList.contains('connect-point') || quizSubmitted) return;
+            const point = e.target;
+            if (!startPoint) {
+                startPoint = point;
+                point.classList.add('selected');
+            } else {
+                if (point.dataset.side !== startPoint.dataset.side) {
+                    const promptPoint = (startPoint.dataset.side === 'prompt') ? startPoint : point;
+                    const matchPoint = (startPoint.dataset.side === 'match') ? startPoint : point;
+                    
+                    Object.values(container.connections).forEach((mId, index) => {
+                        const pId = Object.keys(container.connections)[index];
+                        if (mId === matchPoint.dataset.pointId || pId === promptPoint.dataset.pointId) {
+                            const oldLine = svg.querySelector(`line[data-prompt-id="${pId}"]`);
+                            if (oldLine) oldLine.remove();
+                            container.querySelector(`.connect-point[data-point-id="${pId}"]`).classList.remove('connected');
+                            container.querySelector(`.connect-point[data-point-id="${mId}"]`).classList.remove('connected');
+                            delete container.connections[pId];
+                        }
+                    });
+
+                    const finalLine = drawLine(getPointCenter(promptPoint), getPointCenter(matchPoint));
+                    finalLine.dataset.promptId = promptPoint.dataset.pointId;
+                    svg.appendChild(finalLine);
+                    container.connections[promptPoint.dataset.pointId] = matchPoint.dataset.pointId;
+                    promptPoint.classList.add('connected');
+                    matchPoint.classList.add('connected');
+                }
+                startPoint.classList.remove('selected');
+                startPoint = null;
+                updateProgress();
+            }
+        });
+        container.addEventListener('click', () => setTimeout(updateProgress, 100));
+    });
+});
+</script>
+{% endblock %}
